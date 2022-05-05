@@ -24,6 +24,7 @@ class Bird():
     NUM = 40 
     RADIAN = 3
     SPEED = 4
+    ACCUP = 1
 
     # 생성자
     def __init__(self, args):
@@ -38,7 +39,6 @@ class Bird():
         self.r3 = args.r3
         self.center_pull = args.center_pull
         self.view = args.view
-
         self.neighbors = None
 
         self.v1 = Coordinate()
@@ -80,7 +80,7 @@ class Bird():
         self.v3.x = mean([agent.vx for agent in self.neighbors if agent is not self])
         self.v3.y = mean([agent.vy for agent in self.neighbors if agent is not self])
 
-        self.v3.x = (self.v3.x - self.vx) / 2
+        self.v3.x = (self.v3.x - self.vx) /2
         self.v3.y = (self.v3.y - self.vy) / 2
 
     def intelligent_direction(self):
@@ -88,8 +88,8 @@ class Bird():
         end_x = Field.WIDTH
         end_y = Field.HEIGHT
 
-        self.vx = (end_x-self.x)
-            
+        while self.x < end.x :
+            self.vx = (end_x-self.x)
         self.v3.x = self.vx/self.SPEED
 
     def _collision_detection(self):
@@ -120,8 +120,19 @@ class Bird():
     def update(self):
         dx = self.r1 * self.v1.x + self.r2 * self.v2.x + self.r3 * self.v3.x
         dy = self.r1 * self.v1.y + self.r2 * self.v2.y + self.r3 * self.v3.y
-        self.vx += dx
-        self.vy += dy
+       
+        k = pow(dx,2) + pow(dy,2)+0.000001
+        b = math.sqrt(k/self.ACCUP)
+
+        dx_2 = dx / b
+        dy_2 = dy / b
+
+        self.vx += dx_2 
+        self.vy += dy_2
+
+        #self.vx += dx 
+        #self.vy += dy
+        
 
         distance = (self.vx ** 2 + self.vy ** 2) ** 0.5
 
@@ -129,8 +140,8 @@ class Bird():
             self.vx = (self.vx / distance) * self.SPEED
             self.vy = (self.vy / distance) * self.SPEED
 
-        self.x += int(self.vx)
-        self.y += int(self.vy)
+        self.x += self.vx
+        self.y += self.vy
 
         self._collision_detection()
 
@@ -161,8 +172,8 @@ def main(args):
     canvas = Canvas(root, width=Field.WIDTH, height=Field.HEIGHT)
     canvas.pack()
 
-#   Bird.birds[0].x = 1
-#   Bird.birds[0].y = 1
+    Bird.birds[0].x = 50
+    Bird.birds[0].y = 350
 
 #   Bird.birds[1].x = 1
 #   Bird.birds[1].y = 100
