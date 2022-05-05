@@ -25,36 +25,31 @@ class Bird():
     ACCUP = 1
     srcSquare = [25, 325, 125, 425]
     desSquare = [875, 325, 975, 425]
-    smartCount=4
-    des=np.array([(desSquare[0]+desSquare[2])/2,(desSquare[1]+desSquare[3])/2])
+    smartCount = 20
+    des = np.array([(desSquare[0]+desSquare[2])/2, (desSquare[1]+desSquare[3])/2])
     # 생성자
     def __init__(self, args):
         # self.x = random.randint(50, 100) #start position
         # self.y = random.randint(350, 400)
-        self.pos=np.random.rand(1)*50+np.array([50,350])
+        self.pos = np.random.rand(1)*50+np.array([50, 350])
 #        self.vx = random.randint(-self.SPEED, self.SPEED)
 #        self.vy = random.randint(-self.SPEED, self.SPEED)
 #         self.vx = 0
 #         self.vy = 0
-        self.v=np.zeros(2)
-        self.r1 = args.r1
-        self.r2 = args.r2
-        self.r3 = args.r3
-        self.r4 = args.r4
+        self.v = np.zeros(2)
+
+        self.r=[0]*10
+        self.r[0] = args.r0
+        self.r[1] = args.r1
+        self.r[2] = args.r2
+        self.r[3] = args.r3
         self.center_pull = args.center_pull
         self.view = args.view
         self.neighbors = None
         self.acceleration = 0
         self.smartFlag=0
 
-        # self.v1 = Coordinate()
-        # self.v2 = Coordinate()
-        # self.v3 = Coordinate()
-        # self.v4 = Coordinate()
-        self.v1 = np.zeros(2)
-        self.v2 = np.zeros(2)
-        self.v3 = np.zeros(2)
-        self.v4 = np.zeros(2)
+        self.vf = [np.zeros(2)]*10
 
 
     def find_neighbors(self):
@@ -70,15 +65,15 @@ class Bird():
         #self.v1.x = mean([agent.x for agent in self.neighbors if agent is not self])
         #self.v1.y = mean([agent.y for agent in self.neighbors if agent is not self])
 
-        self.v1 = np.mean([agent.pos for agent in self.neighbors if agent is not self])
+        self.vf[0] = np.mean([agent.pos for agent in self.neighbors if agent is not self],axis=0)
 
         # self.v1.x = (self.v1.x - self.x) / self.center_pull
         # self.v1.y = (self.v1.y - self.y) / self.center_pull
-        self.v1 = (self.v1-self.pos)/self.center_pull
+        self.vf[0] = (self.vf[0]-self.pos)/self.center_pull
 
     def separation(self):
         personal_space = 10
-        self.v2=np.zeros(2)
+        self.vf[1]=np.zeros(2)
         for bird in self.neighbors:
             if bird == self:
                 continue
@@ -88,7 +83,7 @@ class Bird():
             if dist < personal_space:
                 # self.v2.x -= (bird.x - self.x) / 2
                 # self.v2.y -= (bird.y - self.y) / 2
-                self.v2 = self.v2-(bird.pos-self.pos)/2
+                self.vf[1] = self.vf[1] - (bird.pos-self.pos)/2
 
 
     def alignment(self):
@@ -97,27 +92,28 @@ class Bird():
 
         # self.v3.x = mean([agent.vx for agent in self.neighbors if agent is not self])
         # self.v3.y = mean([agent.vy for agent in self.neighbors if agent is not self])
-        self.v3 = np.mean([agent.pos for agent in self.neighbors if agent is not self])
+        self.vf[2] = np.mean([agent.v for agent in self.neighbors if agent is not self],axis=0)
 
         # self.v3.x = (self.v3.x - self.vx) / 2
         # self.v3.y = (self.v3.y - self.vy) / 2
-        self.v3=(self.v3 - self.v) / 2
+        self.vf[2]=(self.vf[2] - self.v) / 2
     def normalization(self, direct, scaleValue):
         # print(1)
         # k = pow(dx, 2) + pow(dy, 2) + 0.000001
         # b = math.sqrt(k / self.ACCUP)
         # dx_2 = dx / b
         # dy_2 = dy / b
-        norm=np.linalg.norm(direct) + 0.000001     #   don't be 0
-
+        norm=np.linalg.norm(direct) + 0.00000001     #   don't be 0
         return direct/norm*scaleValue
 
-    def des_dirction(self,src,des):
-        np.linalg.norm(1)
+
 
     def smartDirection(self):
         
-        self.v4=np.array([1,0])
+        # self.vf[3]=np.array([1,0])
+        direction = Bird.des-self.pos
+        norm = np.linalg.norm(direction)
+        self.vf[3] = direction/norm
         # self.v4.x,self.v4.y=self.des_direction(self,[self.x,self.y],self.des)
 
     def _collision_detection(self):
@@ -153,7 +149,7 @@ class Bird():
         self.cohesion()
         self.separation()
         self.alignment()
-        if self.smartCount==1:
+        if self.smartFlag==1:
             self.smartDirection()
 
     
@@ -162,10 +158,11 @@ class Bird():
         # dx = self.r1 * self.v1.x + self.r2 * self.v2.x + self.r3 * self.v3.x+ self.r4 * self.v4.x
         # dy = self.r1 * self.v1.y + self.r2 * self.v2.y + self.r3 * self.v3.y+ self.r4 * self.v4.y
 
-        d_pos = self.r1 * self.v1 + \
-               self.r2 * self.v2 + \
-               self.r3 * self.v3 + \
-               self.r4 * self.v4
+        # d_pos = self.r1 * self.vf[0] + \
+        #        self.r2 * self.vf[1] + \
+        #        self.r3 * self.vf[2] + \
+        #        self.r4 * self.vf[3]
+        d_pos=sum([self.r[i] * self.vf[i] for i in range(10) ])
 
         d_pos1=self.normalization( d_pos, self.ACCUP)
         self.v = self.v+d_pos1
@@ -256,10 +253,10 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Boids Model parameters')
-    parser.add_argument('--r1', type=float, default=2.0, help='cohesion coefficient') #원래는 1.0
-    parser.add_argument('--r2', type=float, default=0.8, help='separation coefficient')
-    parser.add_argument('--r3', type=float, default=0.3, help='alignment coefficient')
-    parser.add_argument('--r4', type=float, default=0.3, help='intelligent coefficient')
+    parser.add_argument('--r0', type=float, default=2.0, help='cohesion coefficient') #원래는 1.0
+    parser.add_argument('--r1', type=float, default=0.8, help='separation coefficient')
+    parser.add_argument('--r2', type=float, default=0.3, help='alignment coefficient')
+    parser.add_argument('--r3', type=float, default=2, help='intelligent coefficient')
     parser.add_argument('--center-pull', type=int, default=30, 
                         help='center pull coefficient for means of neighbors coordinante') #300
     parser.add_argument('--view', type=int, default=50, help='view of each birds') #150
