@@ -37,13 +37,16 @@ class Bird():
         self.r1 = args.r1
         self.r2 = args.r2
         self.r3 = args.r3
+        self.r4 = args.r4
         self.center_pull = args.center_pull
         self.view = args.view
         self.neighbors = None
+        self.acceleration = 0
 
         self.v1 = Coordinate()
         self.v2 = Coordinate()
         self.v3 = Coordinate()
+        self.v4 = Coordinate()
 
     def find_neighbors(self):
         self.neighbors = [agent for agent in self.birds if agent is not self and self.calc_distance(agent) <= self.view]
@@ -80,17 +83,24 @@ class Bird():
         self.v3.x = mean([agent.vx for agent in self.neighbors if agent is not self])
         self.v3.y = mean([agent.vy for agent in self.neighbors if agent is not self])
 
-        self.v3.x = (self.v3.x - self.vx) /2
+        self.v3.x = (self.v3.x - self.vx) / 2
         self.v3.y = (self.v3.y - self.vy) / 2
 
     def intelligent_direction(self):
-        #종착지에 맞춰서 계속 바꾸기
-        end_x = Field.WIDTH
-        end_y = Field.HEIGHT
+        end_x = 1000
+        end_y = 750
 
-        while self.x < end.x :
-            self.vx = (end_x-self.x)
-        self.v3.x = self.vx/self.SPEED
+        #distance = ((end_x - self.x) ** 2 + (end_y - self.y) ** 2) ** 0.5
+
+        
+        #self.vx = (self.vx / distance) * self.SPEED
+        #self.vy = (self.vy / distance) * self.SPEED
+
+        #distance = end_x - self.x
+        # self.vx = math.sqrt(distance ** 2)
+        # self.vx = (self.vx / self.ACCUP) 
+        # self.v3.x = self.vx
+        self.v4.x=1
 
     def _collision_detection(self):
         if self.x - Bird.RADIAN < 0:
@@ -115,13 +125,14 @@ class Bird():
     def intelligent_step(self):
         self.cohesion()
         self.separation()
+        self.alignment()
         self.intelligent_direction()
 
     def update(self):
-        dx = self.r1 * self.v1.x + self.r2 * self.v2.x + self.r3 * self.v3.x
-        dy = self.r1 * self.v1.y + self.r2 * self.v2.y + self.r3 * self.v3.y
+        dx = self.r1 * self.v1.x + self.r2 * self.v2.x + self.r3 * self.v3.x+ self.r4 * self.v4.y
+        dy = self.r1 * self.v1.y + self.r2 * self.v2.y + self.r3 * self.v3.y+ self.r4 * self.v4.y
        
-        k = pow(dx,2) + pow(dy,2)+0.000001
+        k = pow(dx,2) + pow(dy,2) + 0.000001
         b = math.sqrt(k/self.ACCUP)
 
         dx_2 = dx / b
@@ -132,7 +143,6 @@ class Bird():
 
         #self.vx += dx 
         #self.vy += dy
-        
 
         distance = (self.vx ** 2 + self.vy ** 2) ** 0.5
 
@@ -186,11 +196,19 @@ def main(args):
 
     def animate():
         canvas.delete("all")
+        canvas.create_rectangle(25,325,125,425, outline='red')
+        canvas.create_rectangle(875,325,975,425, outline='blue')
+
+  
         for bird in Bird.birds:    
             bird.find_neighbors()
             bird.draw(canvas)
         
         Bird.birds[0].intelligentdraw(canvas)
+        Bird.birds[1].intelligentdraw(canvas)
+        Bird.birds[2].intelligentdraw(canvas)
+        Bird.birds[3].intelligentdraw(canvas)
+        Bird.birds[4].intelligentdraw(canvas)
         root.after(20, animate)
 
     animate()
@@ -202,8 +220,9 @@ if __name__ == '__main__':
     parser.add_argument('--r1', type=float, default=2.0, help='cohesion coefficient') #원래는 1.0
     parser.add_argument('--r2', type=float, default=0.8, help='separation coefficient')
     parser.add_argument('--r3', type=float, default=0.3, help='alignment coefficient')
-    parser.add_argument('--center-pull', type=int, default=300,
-                        help='center pull coefficient for means of neighbors coordinante')
+    parser.add_argument('--r4', type=float, default=0.3, help='intelligent coefficient')
+    parser.add_argument('--center-pull', type=int, default=30, 
+                        help='center pull coefficient for means of neighbors coordinante') #300
     parser.add_argument('--view', type=int, default=50, help='view of each birds') #150
     args = parser.parse_args()
     main(args)
