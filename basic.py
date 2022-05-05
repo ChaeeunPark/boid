@@ -2,6 +2,7 @@ import argparse
 import math
 import random
 from statistics import mean
+import numpy as np
 from tkinter import *
 
 
@@ -22,8 +23,8 @@ class Coordinate():
 
 class Bird():
     NUM = 40 
-    RADIAN = 3
-    SPEED = 4
+    RADIAN = 5
+    SPEED = 3
 
     @staticmethod
     def setup(args):
@@ -34,6 +35,8 @@ class Bird():
         self.y = random.randint(0, Field.HEIGHT)
         self.vx = random.randint(-self.SPEED, self.SPEED)
         self.vy = random.randint(-self.SPEED, self.SPEED)
+        #self.vx= np.random.rand(1)*self.SPEED*2-self.SPEED
+        #self.vy= np.random.rand(1)*self.SPEED*2-self.SPEED
         self.r1 = args.r1
         self.r2 = args.r2
         self.r3 = args.r3
@@ -63,7 +66,7 @@ class Bird():
         self.v1.y = (self.v1.y - self.y) / self.center_pull
 
     def separation(self):
-        personal_space = 15
+        personal_space = 20
         for bird in self.neighbors:
             if bird == self:
                 continue
@@ -109,15 +112,18 @@ class Bird():
         dy = self.r1 * self.v1.y + self.r2 * self.v2.y + self.r3 * self.v3.y
         self.vx += dx
         self.vy += dy
-
+        self.vx += np.random.rand(1)*0.05-0.025
+        self.vy += np.random.rand(1)*0.05-0.025
+        self.vx=float(self.vx)
+        self.vy = float(self.vy)
         distance = (self.vx ** 2 + self.vy ** 2) ** 0.5
 
         if distance > self.SPEED:
             self.vx = (self.vx / distance) * self.SPEED
             self.vy = (self.vy / distance) * self.SPEED
 
-        self.x += int(self.vx)
-        self.y += int(self.vy)
+        self.x += self.vx
+        self.y += self.vy
 
         self._collision_detection()
 
@@ -157,7 +163,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Boids Model parameters')
     parser.add_argument('--r1', type=float, default=1.0, help='cohesion coefficient')
     parser.add_argument('--r2', type=float, default=0.8, help='separation coefficient')
-    parser.add_argument('--r3', type=float, default=0.3, help='alignment coefficient')
+    parser.add_argument('--r3', type=float, default=0.25, help='alignment coefficient')
     parser.add_argument('--center-pull', type=int, default=300,
                         help='center pull coefficient for means of neighbors coordinante')
     parser.add_argument('--view', type=int, default=50, help='view of each birds') #150
