@@ -5,9 +5,9 @@ from statistics import mean
 from tkinter import *
 import numpy as np
 import time
-
+import pickle
 class Field:
-    WIDTH = 1000
+    WIDTH = 2000
     HEIGHT = 750
 
 
@@ -20,23 +20,22 @@ class Field:
 
 
 class Bird():
-    NUM = 1
-    smartCount = 1
+    NUM = 40
+    smartCount = 20
     RADIAN = 3
     SPEED = 4
-    ACCUP = 0.1
+    ACCUP = 0.2
+    # srcSquare = [25, 325, 125, 425]
+    # desSquare = [875, 325, 975, 425]
     srcSquare = [25, 325, 125, 425]
-    desSquare = [875, 325, 975, 425]
-
-    des = np.array([(desSquare[0]+desSquare[2])/2, (desSquare[1]+desSquare[3])/2])
-
-
+    desSquare = [850, 300, 1000, 450]
+    des = np.array([desSquare[2], (desSquare[1]+desSquare[3])/2])
 
     ## parameters
     r = [1] * 10
     r[0] = 0.25     # cohesion coefficient
     r[1] = 0.25     # separation coefficient
-    r[2] = 0.2     # alignment coefficient
+    r[2] = 0.1     # alignment coefficient
     r[3] = 0.25        # intelligent coefficient
     #r[4]           # acceleration noise
     center_pull = 30
@@ -44,17 +43,16 @@ class Bird():
 
 
 
-    deviation=[]
-    aveVelocity=[]
-    measurement=[[]for i in range(5)]
+    maxiteration=400
+    iteration = 0
     measurement={
         'deviation':[],
         'avevel':[],                # average velocity
-        'aveprovel':[],     # average velocity projected to the direction to the destination
-        'allarrival':[]
+        'avevelproj':[],     # average velocity projected to the direction to the destination
+        'allarrival':maxiteration+1
     }
     # 생성자
-    def __init__(self, args):
+    def __init__(self):
 
         self.pos = np.random.rand(2)*50+np.array([50, 350])
         #self.poss=[]
@@ -106,7 +104,14 @@ class Bird():
         projvels=[np.dot(vels[i],vec2des[i])/vec2desnorm[i]**2*vec2des[i] for i in range(clc.NUM)]
         projvelsnorm=np.linalg.norm(projvels,axis=1)
         projvelsnormave=np.average(projvelsnorm)
-        clc.measurement['avevel'].append(projvelsnormave)
+        clc.measurement['avevelproj'].append(projvelsnormave)
+
+        clc.iteration +=1
+        #[clc.birds[i].arriveFlag for i in range(clc.NUM)]
+
+        if all(onebird.arriveFlag==1 for onebird in clc.birds):
+            clc.measurement['allarrival']=clc.iteration
+
 
     def dummtest(self):
         print(1)
@@ -209,11 +214,10 @@ class Bird():
         self.cohesion()
         self.separation()
         self.alignment()
-        print(1)
+        #print(1)
 
 
     def update(self):
-
         d_pos=self.ACCUP*sum([self.r[i] * self.vf[i] for i in range(10) ])
         if np.linalg.norm(d_pos)>self.ACCUP:
             d_pos1=self.normalization( d_pos, self.ACCUP)
@@ -230,11 +234,13 @@ class Bird():
 
         self._collision_detection()
 
+    def executation(self):
+        self.step()
+        self.update()
 
     def draw(self, drawer):
         #self.clear_movement()
-        self.step()
-        self.update()
+
         if self.smartFlag==1:
             drawer.create_oval(self.pos[0] - Bird.RADIAN,
                                self.pos[1] - Bird.RADIAN,
@@ -254,40 +260,110 @@ class Bird():
 
 
 
-def main(args):
+def myanimate():
 
     def animate():
         canvas.delete("all")
         canvas.create_rectangle(Bird.srcSquare, outline='red')
         canvas.create_rectangle(Bird.desSquare, outline='blue')
-        #c = time.time()
-        #Bird.birds[1].dummtest()
-        # Bird.neighbors()
-        # print(time.time() - c)
-        for i,bird in enumerate(Bird.birds):
-            # c = time.time()
+        for _,bird in enumerate(Bird.birds):
             bird.find_neighbors()
-            # b += time.time()-c
+            bird.executation()
             bird.draw(canvas)
-
         Bird.measure()
-        #print(time.time()-c)
         root.after(20, animate)
 
-    Bird.birds = [Bird(args) for _ in range(Bird.NUM)]
+
+    Bird.birds = [Bird() for _ in range(Bird.NUM)]
     for i in range(Bird.smartCount):
         Bird.birds[i].smartFlag=1        # mark the intelligient birds
-    j=1
-
     root = Tk()
-    j=j+1
-    print(j)
     canvas = Canvas(root, width=Field.WIDTH, height=Field.HEIGHT)
     canvas.pack()
-    # while 1:
-    #     animate()
     animate()
     root.mainloop()
+def numEval():
+    resoWeight = 5
+    paraRange = np.linspace(0.1, 1, resoWeight)
+    smartRange=np.linspace(0.025,0.5,resoWeight)
+    r=[]
+    repetion=3
+    totaltimes = resoWeight ** 5 * repetion
+    processedtimes=0
+    fitness=np.zeros([repetion,3,resoWeight,
+              resoWeight,resoWeight,
+              resoWeight,resoWeight])
+    data=[[[[[[[]for _ in range(resoWeight)]
+              for _ in range(resoWeight)]
+             for _ in range(resoWeight)]
+            for _ in range(resoWeight)]
+           for _ in range(resoWeight)]
+          for _ in range(repetion)]
+    for rep in range(repetion):
+        for i0,r0 in enumerate(paraRange):
+            r.append(r0)
+            for i1,r1 in enumerate(paraRange):
+                r.append(r1)
+                for i2,r2 in enumerate(paraRange):
+                    r.append(r2)
+                    for i3,r3 in enumerate(paraRange):
+                        r.append(r3)
+                        r=r+[1]*(len(Bird.r)-len(r))
+                        for i4,p in enumerate(smartRange):
+                            time1=time.time()
+                            Bird.smartCount=round(Bird.NUM*p)
+                            Bird.birds = [Bird() for _ in range(Bird.NUM)]
+                            for i in range(Bird.smartCount):
+                                Bird.birds[i].smartFlag=1
+                            for iter in range(Bird.maxiteration):
+                                #Bird.neighbors()
+                                for _, bird in enumerate(Bird.birds):
+                                    bird.find_neighbors()
+                                    bird.executation()
+                                Bird.measure()
+                                if Bird.measurement['allarrival']<Bird.maxiteration:
+                                    break
+                            data[rep][i0][i1][i2][i3][i4]=Bird.measurement
+                            processedtimes +=1
+                            allarrival=Bird.measurement['allarrival']<Bird.maxiteration
+                            # fitnessval=(
+                            #         (Bird.maxiteration-Bird.measurement['allarrival'])/Bird.maxiteration+\
+                            #         (150-max(Bird.measurement['deviation']))/150+\
+                            #         max(Bird.measurement['avevelproj'])/Bird.SPEED+\
+                            #         1-p
+                            #      )*\
+                            firstthree=(Bird.maxiteration-Bird.measurement['allarrival'])/Bird.maxiteration+\
+                                    (150-max(Bird.measurement['deviation']))/150+\
+                                    max(Bird.measurement['avevelproj'])/Bird.SPEED
+                            fitness[rep,0,i0,i1,i2,i3,i4]=(firstthree+(1-p))*allarrival
+                            fitness[rep, 1, i0, i1, i2, i3, i4] = (firstthree + (1 - 1.5*p)) * allarrival
+                            fitness[rep, 2, i0, i1, i2, i3, i4] = (firstthree + (1 - 2*p)) * allarrival
+                            print("fitness value:",fitness[rep,0,i0,i1,i2,i3,i4])
+
+                            print(processedtimes,'/',totaltimes)
+                            # reset class variables
+                            Bird.iteration = 0
+                            Bird.measurement = {
+                                'deviation': [],
+                                'avevel': [],  # average velocity
+                                'avevelproj': [],  # average velocity projected to the direction to the destination
+                                'allarrival': Bird.maxiteration+1
+                            }
+                            print("This iteration costs: ", time.time()-time1,"s")
+
+    with open('0511.pkl', 'wb') as f:
+        pickle.dump(data, f)
+        pickle.dump(fitness, f)
+    print(1)
+
+def main():
+
+
+
+    if 0:
+        myanimate()
+    else:
+        numEval()
 
 
 if __name__ == '__main__':
@@ -300,6 +376,6 @@ if __name__ == '__main__':
                         help='center pull coefficient for means of neighbors coordinante') #300
     parser.add_argument('--view', type=int, default=50, help='view of each birds') #150
     args = parser.parse_args()
-    main(args)
+    main()
 
     
