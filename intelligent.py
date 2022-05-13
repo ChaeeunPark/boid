@@ -362,7 +362,7 @@ def main():
 
 
 
-    if 1:
+    if 0:
         myanimate()
     else:
         numEval()
