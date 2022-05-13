@@ -21,7 +21,7 @@ class Field:
 
 class Bird():
     NUM = 40
-    smartCount = 20
+    smartCount = 10
     RADIAN = 3
     SPEED = 4
     ACCUP = 0.2
@@ -33,11 +33,11 @@ class Bird():
 
     ## parameters
     r = [1] * 10
-    r[0] = 0.25     # cohesion coefficient
-    r[1] = 0.25     # separation coefficient
-    r[2] = 0.1     # alignment coefficient
-    r[3] = 0.25        # intelligent coefficient
-    #r[4]           # acceleration noise
+    r[0] = 0.1     # cohesion coefficient
+    r[1] = 1     # separation coefficient
+    r[2] = 1     # alignment coefficient
+    r[3] = 0.4        # intelligent coefficient
+    #r[4]=1           # acceleration noise
     center_pull = 30
     view = 50
 
@@ -46,10 +46,10 @@ class Bird():
     maxiteration=400
     iteration = 0
     measurement={
-        'deviation':[],
-        'avevel':[],                # average velocity
-        'avevelproj':[],     # average velocity projected to the direction to the destination
-        'allarrival':maxiteration+1
+        'deviation': [],
+        'avevel': [],                # average velocity
+        'avevelproj': [],     # average velocity projected to the direction to the destination
+        'allarrival': maxiteration+1
     }
     # 생성자
     def __init__(self):
@@ -127,7 +127,7 @@ class Bird():
 
         self.vf[0] = np.mean([agent.pos for agent in self.neighbors if agent is not self],axis=0)
         self.vf[0] = (self.vf[0]-self.pos)#/self.center_pull
-        self.vf[0]=self.normalization(self.vf[0])
+        #self.vf[0]=self.normalization(self.vf[0])
 
     def separation(self):
 
@@ -153,10 +153,10 @@ class Bird():
 
         self.vf[2] = np.mean([agent.v for agent in self.neighbors if agent is not self],axis=0)
         self.vf[2]=(self.vf[2] - self.v)
-        self.vf[2]=self.normalization(self.vf[2])
+        #self.vf[2]=self.normalization(self.vf[2])
 
     def noise(self):
-        self.vf[4]=np.zeros([2])*0.05*self.ACCUP
+        self.vf[4]=np.ones([2])*0.05*self.ACCUP
 
     def normalization(self, direct, scaleValue=1):
         # print(1)
@@ -283,11 +283,11 @@ def myanimate():
     animate()
     root.mainloop()
 def numEval():
-    resoWeight = 5
+    resoWeight = 4
     paraRange = np.linspace(0.1, 1, resoWeight)
     smartRange=np.linspace(0.025,0.5,resoWeight)
     r=[]
-    repetion=3
+    repetion=5
     totaltimes = resoWeight ** 5 * repetion
     processedtimes=0
     fitness=np.zeros([repetion,3,resoWeight,
@@ -325,22 +325,24 @@ def numEval():
                                     break
                             data[rep][i0][i1][i2][i3][i4]=Bird.measurement
                             processedtimes +=1
-                            allarrival=Bird.measurement['allarrival']<Bird.maxiteration
+
                             # fitnessval=(
                             #         (Bird.maxiteration-Bird.measurement['allarrival'])/Bird.maxiteration+\
                             #         (150-max(Bird.measurement['deviation']))/150+\
                             #         max(Bird.measurement['avevelproj'])/Bird.SPEED+\
                             #         1-p
                             #      )*\
-                            firstthree=(Bird.maxiteration-Bird.measurement['allarrival'])/Bird.maxiteration+\
-                                    (150-max(Bird.measurement['deviation']))/150+\
-                                    max(Bird.measurement['avevelproj'])/Bird.SPEED
-                            fitness[rep,0,i0,i1,i2,i3,i4]=(firstthree+(1-p))*allarrival
-                            fitness[rep, 1, i0, i1, i2, i3, i4] = (firstthree + (1 - 1.5*p)) * allarrival
-                            fitness[rep, 2, i0, i1, i2, i3, i4] = (firstthree + (1 - 2*p)) * allarrival
-                            print("fitness value:",fitness[rep,0,i0,i1,i2,i3,i4])
+                            if Bird.measurement['allarrival'] < Bird.maxiteration:
+                                firstthree=(Bird.maxiteration-Bird.measurement['allarrival'])/Bird.maxiteration+\
+                                        (150-max(Bird.measurement['deviation']))/150+\
+                                        max(Bird.measurement['avevelproj'])/Bird.SPEED
+                                fitness[rep,0,i0,i1,i2,i3,i4]=(firstthree+(1-p))
+                                fitness[rep, 1, i0, i1, i2, i3, i4] = (firstthree + (1 - 1.5*p))
+                                fitness[rep, 2, i0, i1, i2, i3, i4] = (firstthree + (1 - 2*p))
+                                print("fitness value:",fitness[rep,0,i0,i1,i2,i3,i4])
 
                             print(processedtimes,'/',totaltimes)
+                            print(time.ctime())
                             # reset class variables
                             Bird.iteration = 0
                             Bird.measurement = {
@@ -351,7 +353,7 @@ def numEval():
                             }
                             print("This iteration costs: ", time.time()-time1,"s")
 
-    with open('0511.pkl', 'wb') as f:
+    with open('0512twilight.pkl', 'wb') as f:
         pickle.dump(data, f)
         pickle.dump(fitness, f)
     print(1)
@@ -360,7 +362,7 @@ def main():
 
 
 
-    if 0:
+    if 1:
         myanimate()
     else:
         numEval()
